@@ -23,10 +23,12 @@ build/
 *.log
 logs/
 
-# 测试/截图
+# 截图（保留项目截图，排除其他）
 *.png
 *.jpg
-!docs/
+!overview.png
+!crawl-tab.png
+!prices-tab.png
 
 # Playwright
 .playwright-mcp/
