@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汽车报价监测系统</title>
+<link href="https://cdn.bootcdn.net/ajax/libs/element-plus/2.9.1/index.css" rel="stylesheet">
+<script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.13/vue.global.prod.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/element-plus/2.9.1/index.full.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 22px; font-weight: 600; margin: 0; }
+.header .sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+.main { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #fff; border-radius: 12px; padding: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.tab { padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #606266; transition: all 0.2s; }
+.tab:hover { color: #409eff; }
+.tab.active { background: #409eff; color: #fff; font-weight: 600; }
+.stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.stat-card .label { font-size: 13px; color: #909399; margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 700; color: #303133; }
+.stat-card .value.blue { color: #409eff; }
+.stat-card .value.green { color: #67c23a; }
+.stat-card .value.orange { color: #e6a23c; }
+.stat-card .value.red { color: #f56c6c; }
+.stat-card .source-tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.stat-card .source-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #f0f2f5; color: #606266; }
+.card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.card-title { font-size: 16px; font-weight: 600; color: #303133; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.crawl-box { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.task-progress { margin-top: 16px; padding: 16px; background: #f5f7fa; border-radius: 8px; }
+.task-progress .status { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.filter-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.price-cell { font-weight: 600; }
+.discount-tag { color: #f56c6c; font-weight: 600; }
+.province-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.province-bar .bar { height: 20px; background: linear-gradient(90deg, #409eff, #67c23a); border-radius: 4px; min-width: 4px; transition: width 0.3s; }
+.province-bar .name { width: 60px; text-align: right; font-size: 13px; color: #606266; }
+.province-bar .info { font-size: 12px; color: #909399; margin-left: 4px; }
+.history-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.history-item:last-child { border: none; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.data-table th { background: #fafafa; color: #606266; font-weight: 600; text-align: left; padding: 12px 8px; border-bottom: 2px solid #ebeef5; white-space: nowrap; }
+.data-table td { padding: 10px 8px; border-bottom: 1px solid #ebeef5; color: #303133; }
+.data-table tbody tr:hover { background: #f5f7fa; }
+.data-table tbody tr:nth-child(even) { background: #fafafa; }
+.data-table tbody tr:nth-child(even):hover { background: #f0f2f5; }
+.series-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.series-table th { background: #fafafa; color: #606266; font-weight: 600; text-align: left; padding: 10px 8px; border-bottom: 2px solid #ebeef5; }
+.series-table td { padding: 8px; border-bottom: 1px solid #ebeef5; }
+.series-table tbody tr:hover { background: #f5f7fa; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.badge.own { background: #e1f3d8; color: #67c23a; }
+.badge.competitor { background: #fde2e2; color: #f56c6c; }
+.badge.autohome { background: #e6f1fc; color: #409eff; }
+.badge.dongchedi { background: #fdf6ec; color: #e6a23c; }
+.badge.yiche { background: #f0f9eb; color: #67c23a; }
+.badge.spec { background: #ecf5ff; color: #409eff; font-size: 11px; }
+.badge.series-level { background: #f0f2f5; color: #909399; font-size: 11px; }
+.source-check { display: flex; gap: 16px; align-items: center; }
+.source-check label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <h1>汽车报价监测系统</h1>
+      <div class="sub">多平台经销商报价数据采集与分析</div>
+    </div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.5)">数据来源: 汽车之家 | 懂车帝 | 易车网</div>
+  </div>
+
+  <div class="main">
+    <div class="tabs">
+      <div class="tab" :class="{active: activeTab==='dashboard'}" @click="activeTab='dashboard'">数据概览</div>
+      <div class="tab" :class="{active: activeTab==='crawl'}" @click="activeTab='crawl'">数据采集</div>
+      <div class="tab" :class="{active: activeTab==='data'}" @click="activeTab='data'">报价明细</div>
+      <div class="tab" :class="{active: activeTab==='series'}" @click="activeTab='series'">车系管理</div>
+    </div>
+
+    <!-- 数据概览 -->
+    <div v-show="activeTab==='dashboard'">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="label">总记录数</div>
+          <div class="value blue">{{ overview.total_records?.toLocaleString() || 0 }}</div>
+          <div class="source-tags">
+            <span class="source-tag" v-for="(v,k) in overview.source_stats" :key="k">{{k}}: {{v}}</span>
+          </div>
+        </div>
+        <div class="stat-card"><div class="label">车系数量</div><div class="value green">{{ overview.total_series || 0 }}</div></div>
+        <div class="stat-card"><div class="label">经销商数量</div><div class="value orange">{{ overview.total_dealers?.toLocaleString() || 0 }}</div></div>
+        <div class="stat-card"><div class="label">覆盖城市</div><div class="value red">{{ overview.total_cities || 0 }}</div></div>
+        <div class="stat-card"><div class="label">最新数据日期</div><div class="value" style="font-size:20px">{{ overview.latest_date || '-' }}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-title">省份分布 (Top 15)</div>
+          <div v-if="provinceStats.length===0" style="color:#c0c4cc;text-align:center;padding:40px 0">暂无数据</div>
+          <div v-for="p in provinceStats.slice(0,15)" :key="p.province" class="province-bar">
+            <span class="name">{{ p.province }}</span>
+            <div class="bar" :style="{width: (p.count / maxProvinceCount * 200) + 'px'}"></div>
+            <span class="info">{{ p.count }}家 | 均价{{ p.avg_min_price }}万 | 降{{ p.avg_discount }}万</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">采集历史</div>
+          <div v-if="taskHistory.length===0" style="color:#c0c4cc;text-align:center;padding:40px 0">暂无记录</div>
+          <div v-for="t in taskHistory" :key="t.id" class="history-item">
+            <div>
+              <el-tag :type="statusType(t.status)" size="small" style="margin-right:8px">{{ statusText(t.status) }}</el-tag>
+              <span style="font-size:14px">{{ t.series_name }}</span>
+              <span style="font-size:11px;color:#909399;margin-left:6px">[{{ t.source }}]</span>
+              <span style="font-size:12px;color:#909399;margin-left:8px">{{ t.total }}条</span>
+            </div>
+            <span style="font-size:12px;color:#c0c4cc">{{ t.created_at?.substring(5,16) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据采集 -->
+    <div v-show="activeTab==='crawl'">
+      <div class="card">
+        <div class="card-title">采集控制</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <el-autocomplete v-model="crawlInput" :fetch-suggestions="querySeries" placeholder="输入车系名称，如：轩逸、天籁、卡罗拉" @select="handleSelect" size="large" clearable style="width:280px"/>
+            <el-select v-model="crawlScope" size="large" style="width:120px">
+              <el-option label="单车系" value="single"/><el-option label="整品牌" value="brand"/><el-option label="全部" value="all"/>
+            </el-select>
+            <el-button type="primary" size="large" @click="startCrawl" :loading="crawling" :disabled="!crawlInput && crawlScope==='single'">开始采集</el-button>
+          </div>
+          <div class="source-check">
+            <span style="font-size:13px;color:#909399">数据源：</span>
+            <label><input type="checkbox" v-model="crawlSources" value="autohome"> 汽车之家</label>
+            <label><input type="checkbox" v-model="crawlSources" value="dongchedi"> 懂车帝</label>
+            <label style="opacity:0.5;cursor:not-allowed"><input type="checkbox" v-model="crawlSources" value="yiche" disabled> 易车网(维护中)</label>
+          </div>
+        </div>
+        <div class="task-progress" v-if="currentTask">
+          <div class="status">
+            <el-tag :type="statusType(currentTask.status)" size="small">{{ statusText(currentTask.status) }}</el-tag>
+            <span style="font-size:14px;color:#606266">{{ currentTask.series_name }}</span>
+            <span style="font-size:11px;color:#909399">[{{ currentTask.source }}]</span>
+            <span v-if="currentTask.total" style="font-size:13px;color:#909399">已采集 {{ currentTask.total }} 条</span>
+          </div>
+          <div style="font-size:13px;color:#909399">{{ currentTask.message }}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">快捷采集 - 已配置车系</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <el-button v-for="s in seriesList" :key="s.id" size="small" :type="s.brand_type==='own'?'success':'danger'" plain @click="quickCrawl(s.name)">{{ s.name }}</el-button>
+        </div>
+        <div style="margin-top:12px">
+          <el-button type="warning" @click="crawlAll" :loading="crawling">一键采集全部</el-button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">采集历史</div>
+        <div v-if="taskHistory.length===0" style="color:#c0c4cc;text-align:center;padding:40px 0">暂无记录</div>
+        <div v-for="t in taskHistory" :key="t.id" class="history-item">
+          <div>
+            <el-tag :type="statusType(t.status)" size="small" style="margin-right:8px">{{ statusText(t.status) }}</el-tag>
+            <span style="font-size:14px">{{ t.series_name }}</span>
+            <span style="font-size:11px;color:#909399;margin-left:6px">[{{ t.source }}] {{ t.scope }}</span>
+            <span style="font-size:12px;color:#909399;margin-left:8px">{{ t.total }}条</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:#c0c4cc">{{ t.created_at?.substring(5,16) }}</div>
+            <div v-if="t.message" style="font-size:11px;color:#909399;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.message }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 报价明细 -->
+    <div v-show="activeTab==='data'">
+      <div class="card">
+        <div class="card-title">报价数据明细</div>
+        <div class="filter-row">
+          <el-select v-model="filter.series_name" placeholder="车系" clearable @change="loadPrices" style="width:150px">
+            <el-option v-for="s in filters.series" :key="s" :label="s" :value="s"/>
+          </el-select>
+          <el-select v-model="filter.province" placeholder="省份" clearable @change="loadPrices" style="width:120px">
+            <el-option v-for="p in filters.provinces" :key="p" :label="p" :value="p"/>
+          </el-select>
+          <el-select v-model="filter.source" placeholder="数据来源" clearable @change="loadPrices" style="width:120px">
+            <el-option v-for="s in filters.sources" :key="s" :label="sourceLabel(s)" :value="s"/>
+          </el-select>
+          <el-select v-model="filter.crawl_date" placeholder="日期" clearable @change="loadPrices" style="width:150px">
+            <el-option v-for="d in filters.dates" :key="d" :label="d" :value="d"/>
+          </el-select>
+          <el-select v-model="filter.brand_type" placeholder="本品/竞品" clearable @change="loadPrices" style="width:120px">
+            <el-option label="本品" value="own"/><el-option label="竞品" value="competitor"/>
+          </el-select>
+          <el-button @click="loadPrices">查询</el-button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:100px">日期</th>
+                <th style="width:60px">来源</th>
+                <th style="width:60px">省份</th>
+                <th style="width:70px">城市</th>
+                <th style="min-width:150px">经销商</th>
+                <th style="width:50px">类型</th>
+                <th style="width:60px">车系</th>
+                <th style="min-width:160px">车型</th>
+                <th style="width:120px">经销商报价</th>
+                <th style="width:120px">指导价</th>
+                <th style="width:70px">最大优惠</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in prices.data" :key="row.id">
+                <td>{{ row.crawl_date }}</td>
+                <td><span class="badge" :class="row.source">{{ sourceLabel(row.source) }}</span></td>
+                <td>{{ row.province }}</td>
+                <td>{{ row.city }}</td>
+                <td :title="row.dealer_name" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.dealer_name }}</td>
+                <td>{{ row.dealer_type }}</td>
+                <td>{{ row.series_name }}</td>
+                <td style="font-size:12px;color:#606266" :title="row.spec_name">{{ row.spec_name || '-' }}</td>
+                <td class="price-cell">
+                  <template v-if="row.min_price">{{ row.min_price }}<template v-if="row.max_price"> - {{ row.max_price }}</template>万</template>
+                  <template v-else>-</template>
+                </td>
+                <td>
+                  <template v-if="row.guide_price">{{ row.guide_price }}万</template>
+                  <template v-else-if="row.guide_min_price">{{ row.guide_min_price }} - {{ row.guide_max_price }}万</template>
+                  <template v-else>-</template>
+                </td>
+                <td class="discount-tag">{{ row.max_discount ? row.max_discount + '万' : '-' }}</td>
+              </tr>
+              <tr v-if="prices.data.length===0">
+                <td colspan="11" style="text-align:center;color:#c0c4cc;padding:40px 0">暂无数据，请先采集</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end">
+          <el-pagination v-model:current-page="filter.page" :page-size="filter.size" :total="prices.total" layout="total, prev, pager, next" @current-change="loadPrices"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- 车系管理 -->
+    <div v-show="activeTab==='series'">
+      <div class="card">
+        <div class="card-title">
+          车系管理
+          <el-button type="primary" size="small" style="margin-left:auto" @click="showAddSeries=true">添加车系</el-button>
+        </div>
+        <div v-if="showAddSeries" style="background:#f5f7fa;padding:16px;border-radius:8px;margin-bottom:16px">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <div style="font-size:12px;color:#909399;margin-bottom:4px">车系名称*</div>
+              <el-input v-model="newSeries.name" placeholder="如：轩逸" size="small" style="width:120px"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:#909399;margin-bottom:4px">品牌*</div>
+              <el-input v-model="newSeries.brand" placeholder="如：东风日产" size="small" style="width:120px"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:#909399;margin-bottom:4px">类型</div>
+              <el-select v-model="newSeries.brand_type" size="small" style="width:100px">
+                <el-option label="本品" value="own"/><el-option label="竞品" value="competitor"/>
+              </el-select>
+            </div>
+            <div>
+              <div style="font-size:12px;color:#909399;margin-bottom:4px">汽车之家ID</div>
+              <el-input v-model.number="newSeries.autohome_id" placeholder="如：425" size="small" style="width:100px"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:#909399;margin-bottom:4px">懂车帝ID</div>
+              <el-input v-model.number="newSeries.dongchedi_id" placeholder="自动搜索" size="small" style="width:100px"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:#909399;margin-bottom:4px">易车slug</div>
+              <el-input v-model="newSeries.yiche_slug" placeholder="如：xuanyi" size="small" style="width:120px"/>
+            </div>
+            <el-button type="primary" size="small" @click="addSeries">保存</el-button>
+            <el-button size="small" @click="showAddSeries=false">取消</el-button>
+          </div>
+        </div>
+        <table class="series-table">
+          <thead>
+            <tr><th>ID</th><th>车系名称</th><th>品牌</th><th>类型</th><th>汽车之家ID</th><th>懂车帝ID</th><th>易车slug</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="s in seriesList" :key="s.id">
+              <td>{{ s.id }}</td>
+              <td style="font-weight:600">{{ s.name }}</td>
+              <td>{{ s.brand }}</td>
+              <td><span class="badge" :class="s.brand_type">{{ s.brand_type==='own'?'本品':'竞品' }}</span></td>
+              <td>{{ s.autohome_id || '-' }}</td>
+              <td>{{ s.dongchedi_id || '-' }}</td>
+              <td>{{ s.yiche_slug || '-' }}</td>
+              <td><el-switch v-model="s.is_active" @change="toggleSeries(s)" size="small"/></td>
+              <td><el-button size="small" type="danger" text @click="deleteSeries(s)">删除</el-button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+// 用原生fetch替代axios
+async function api(url, opts = {}) {
+  const resp = await fetch(url, opts);
+  return resp.json();
+}
+function qs(params) {
+  const s = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== '' && v !== null && v !== undefined) s.append(k, v);
+  }
+  return s.toString();
+}
+
+const app = createApp({
+  setup() {
+    const activeTab = ref('dashboard');
+    const crawlInput = ref('');
+    const crawling = ref(false);
+    const crawlSources = ref(['autohome', 'dongchedi', 'yiche']);
+    const crawlScope = ref('single');
+    const currentTask = ref(null);
+    const taskHistory = ref([]);
+    const overview = ref({});
+    const provinceStats = ref([]);
+    const prices = ref({ total: 0, data: [] });
+    const filters = ref({ series: [], provinces: [], dates: [], sources: [] });
+    const filter = reactive({ series_name: '', province: '', source: '', crawl_date: '', brand_type: '', page: 1, size: 20 });
+    const seriesList = ref([]);
+    const showAddSeries = ref(false);
+    const newSeries = reactive({ name: '', brand: '', brand_type: 'competitor', autohome_id: null, dongchedi_id: null, yiche_slug: '' });
+
+    const maxProvinceCount = computed(() => Math.max(...provinceStats.value.map(p => p.count), 1));
+    const statusType = (s) => ({ pending: 'info', running: 'warning', done: 'success', error: 'danger' }[s] || 'info');
+    const statusText = (s) => ({ pending: '等待中', running: '采集中', done: '已完成', error: '失败' }[s] || s);
+    const sourceLabel = (s) => ({ autohome: '汽车之家', dongchedi: '懂车帝', yiche: '易车网' }[s] || s);
+
+    async function querySeries(q, cb) {
+      const data = await api('/api/series/suggest?' + qs({ q }));
+      cb(data.map(v => ({ value: v })));
+    }
+    function handleSelect(item) { crawlInput.value = item.value; }
+
+    async function startCrawl() {
+      if (!crawlInput.value && crawlScope.value === 'single') return;
+      crawling.value = true;
+      try {
+        const params = qs({ series_name: crawlInput.value || '全部', sources: crawlSources.value.join(','), scope: crawlScope.value });
+        const data = await api('/api/crawl/start?' + params, { method: 'POST' });
+        pollTask(data.task_id);
+      } catch (e) {
+        ElementPlus.ElMessage.error('启动失败');
+        crawling.value = false;
+      }
+    }
+
+    function quickCrawl(name) {
+      crawlInput.value = name;
+      crawlScope.value = 'single';
+      startCrawl();
+    }
+    function crawlAll() {
+      crawlInput.value = '全部';
+      crawlScope.value = 'all';
+      startCrawl();
+    }
+
+    let pollTimer = null;
+    function pollTask(taskId) {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        const data = await api(`/api/crawl/status/${taskId}`);
+        currentTask.value = data;
+        if (data.status === 'done' || data.status === 'error') {
+          clearInterval(pollTimer);
+          crawling.value = false;
+          if (data.status === 'done') ElementPlus.ElMessage.success(`采集完成! 共${data.total}条`);
+          else ElementPlus.ElMessage.error(data.message);
+          refresh();
+        }
+      }, 2000);
+    }
+
+    async function loadPrices() {
+      prices.value = await api('/api/prices?' + qs(filter));
+    }
+    async function loadSeries() {
+      seriesList.value = await api('/api/series');
+    }
+
+    async function addSeries() {
+      const data = await api('/api/series?' + qs(newSeries), { method: 'POST' });
+      if (data.error) { ElementPlus.ElMessage.warning(data.error); return; }
+      ElementPlus.ElMessage.success(data.message);
+      showAddSeries.value = false;
+      Object.assign(newSeries, { name: '', brand: '', brand_type: 'competitor', autohome_id: null, dongchedi_id: null, yiche_slug: '' });
+      loadSeries();
+    }
+
+    async function toggleSeries(s) {
+      await api(`/api/series/${s.id}?is_active=${s.is_active}`, { method: 'PUT' });
+    }
+    async function deleteSeries(s) {
+      if (!confirm(`确定删除「${s.name}」？`)) return;
+      await api(`/api/series/${s.id}`, { method: 'DELETE' });
+      loadSeries();
+    }
+
+    async function refresh() {
+      const [o, p, h, f] = await Promise.all([
+        api('/api/stats/overview'),
+        api('/api/stats/province'),
+        api('/api/crawl/history'),
+        api('/api/filters'),
+      ]);
+      overview.value = o;
+      provinceStats.value = p;
+      taskHistory.value = h;
+      filters.value = f;
+      loadPrices();
+      loadSeries();
+    }
+
+    onMounted(refresh);
+
+    return {
+      activeTab, crawlInput, crawling, crawlSources, crawlScope,
+      currentTask, taskHistory, overview, provinceStats,
+      prices, filters, filter, seriesList, showAddSeries, newSeries,
+      maxProvinceCount, statusType, statusText, sourceLabel,
+      querySeries, handleSelect, startCrawl, quickCrawl, crawlAll,
+      loadPrices, loadSeries, addSeries, toggleSeries, deleteSeries,
+    };
+  }
+});
+app.use(ElementPlus);
+app.mount('#app');
+</script>
+</body>
+</html>
